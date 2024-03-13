@@ -16,6 +16,7 @@ type Args struct {
 }
 
 func checkArgs(args *Args) error {
+	log.Printf("args: src[%s]", args.Src)
 	srcFile, err := os.Lstat(args.Src)
 	if err != nil {
 		return fmt.Errorf("lstat src file[%s] fail: %w", args.Src, err)
@@ -24,13 +25,13 @@ func checkArgs(args *Args) error {
 		return fmt.Errorf("src file[%s] is not a directory", args.Src)
 	}
 	for ext, dst := range args.Dst {
-		log.Printf("ext: %s, dst: %s", ext, dst)
+		log.Printf("args: ext[%s] dst[%s]", ext, dst)
 	}
 	return nil
 }
 
 func main() {
-	log.SetFlags(log.LstdFlags | log.Lshortfile | log.Lmicroseconds)
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 	args := &Args{}
 	_, err := flags.Parse(args)
 	if err != nil {
@@ -46,6 +47,10 @@ func main() {
 	}
 
 	err = filepath.WalkDir(args.Src, func(path string, d os.DirEntry, err error) error {
+		if d.IsDir() {
+			log.Printf("scanning dir[%s]", path)
+			return nil
+		}
 		ext := filepath.Ext(path)
 		if ext == "" {
 			return nil
@@ -71,12 +76,12 @@ func main() {
 			}
 			if srcFile.Size() != dstFile.Size() || srcFile.ModTime() != dstFile.ModTime() {
 				// copy file
-				log.Printf("move file(recover): %s -> %s", path, dstPath)
+				log.Printf("move file(recover) [%s] -> [%s]", path, dstPath)
 			}
 		} else {
 			if os.IsNotExist(err) {
 				// ok
-				log.Printf("move file(rename): %s -> %s", path, dstPath)
+				log.Printf("move file(rename) [%s] -> [%s]", path, dstPath)
 			} else {
 				return fmt.Errorf("lstat dst file[%s] fail: %w", dstPath, err)
 			}
